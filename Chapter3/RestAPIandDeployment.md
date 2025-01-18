@@ -161,10 +161,84 @@ Now we are at a point to where any code we write, we just test it by executing a
 Jest is a test runner which will define and execute unit tests. The mongodb-memory-server library will let us create a new instance of the MongoDB database , storing our data only in memory so that we can run our tests on a fresh database instance. 
 
 ###### Setting up the test environment
+<details>
+<summary>how to setup your test environment</summary>
 1. Install Jest  and mongo db memory server into your project
 ```npm install --save-dev jest@29.7.0```
 ```npm install --save-dev mongodb-memory-server@9.1.1```
 
 2. Create a /src/tests folder to put our tests in
-3. In the new tests folder, create a file called globalSetup.js. What is this for?
+3. In the new tests folder, create a file called globalSetup.js.
 
+```
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+// this function will be used to create a memory server for MongoDB
+export default async function globalSetup() {
+
+    const instance = await MongoMemoryServer.create({
+
+        // we have to set the binary version here to the same version that weve installed for our docker container
+        binary: {
+            version: '6.0.4',
+        }
+    })
+
+    global.__MONGOINSTANCE = instance;
+    process.env.DATABASE_URL = instance.getUri();
+}
+```
+ Then we need a globalTeardown.js to stop the mongoDB instance when were done with our tests
+
+ ```
+ export default async function globalTeardown() {
+    await global.__MONGOINSTANCE.stop();
+}
+ ```
+
+ Now we need a setupFileAfterEnv.js file to define a beforeAll and afterAll functions to initialize our db and disconnect respectively. 
+
+ ```
+ import mongoose from 'mongoose';
+import { beforeAll, afterAll } from '@jest/globals';
+
+import { initDatabase } from '../db/init.js';
+beforeAll(async () => {
+    await initDatabase();
+})
+
+afterAll(async () => {
+    await mongoose.disconnect();
+})
+```
+
+4. Now we will need to create a jest.config.json file in the root of our project
+
+```
+{
+    "testEnvironment": "node",
+    "globalSetup": "<rootDir>//src/tests/globalSetup.js",
+    "globalTeardown": "<rootDir>/src/tests/globalTeardown.js",
+    "setupFileAfterEnv": ["<rootDir>/src/tests/setupFileAfterEnv.js"]
+}
+```
+
+* note that we are stating <rootDir>, as this is something jest will resolve on its own. 
+
+Then finally in the package.json script of our project, we will need to add a test property to our script:
+
+```
+  "scripts": {
+    "start": "react-scripts start",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "eject": "react-scripts eject"
+  },
+```
+
+Now we should be able to execute ```npm test``` and the logs will show that there no scripts to test.
+</details>
+
+###### Writing our 1st service function: createPost
+This function will create a new post for us. We can then write tests for it by verifying the create function makes a new post with the required fields. 
+
+1. Create a new /src/services/posts.js file
