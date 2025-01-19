@@ -242,3 +242,73 @@ Now we should be able to execute ```npm test``` and the logs will show that ther
 This function will create a new post for us. We can then write tests for it by verifying the create function makes a new post with the required fields. 
 
 1. Create a new /src/services/posts.js file
+
+```
+import { Post } from '../db/models/post.js';
+
+// Using our Post model, we are creating a function that takes the required post fields, creates, and then returns a new Post. 
+export async function createPost({ title, author, contents, tags }) {
+    const post = new Post({ title, author, contents, tags });
+    return await post.save();
+};
+```
+
+###### Defining test cases for the createPost service function
+Lets test our createPost function. 
+
+1. Create a new folder under /src called ```__test__```
+2. Then create a new ```posts.test.js``` file in our new folder. 
+3. In the new folder write this code:
+
+<details>
+<summary>posts.test.js</summary>
+
+```.js
+import mongoose from 'mongoose';
+import { describe, expect, test } from '@jest/globals';
+import { createPost } from '../services/posts.js'
+import { Post } from '../db/models/post.js';
+
+// this function creates a new test, we can have multiple tests in here
+describe('creating posts', () => {
+
+    // this function is where we define our new test
+    test('with all parameters should succeeed', async() => {
+        const post = {
+            title: 'Hello Mongoose!',
+            author: 'Chakane Shegog',
+            contents: 'this post is stored in MongoDB db using Mongoose',
+            tags: ['mongoose', 'mongodb']
+        }
+        const createdPost = await createPost(post);
+        expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId);
+        const foundPost = await Post.findById(createdPost._id);
+        expect(foundPost).toEqual(expect.objectContaining(post));
+        expect(foundPost.createdAt).toBeInstanceOf(Date);
+    });
+
+    test('without title should fail', async () => {
+        const post = {
+            author: 'Chakane Shegog',
+            contents: 'Post with no title',
+            tags: ['Empty']
+        };
+
+        try {
+            await createPost(post);
+        } catch (err) {
+            expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
+            expect(err.message).toContain('`title` is required');
+        }
+    });
+
+    test('with minimal parameters should succeed', async () => {
+        const post = {
+            title: 'Only a title',
+        };
+        const createdPost = await createPost(post);
+        expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId);
+    });
+})
+```
+</details>
