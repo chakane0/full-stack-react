@@ -312,3 +312,174 @@ describe('creating posts', () => {
 })
 ```
 </details>
+
+###### Defining a function to list posts. 
+We will be creating an internal function to list al of our posts called ```listPosts```. This function will be able to query posts and define a sort order. This function will define these related functions: ```listAllPosts``` ```listPostsByAuthor``` ```listPostsByTag```.
+
+1. Edit the /src/services/posts.js file to define a function at the end of the file. 
+<details>
+<summary>new posts.js</summary>
+
+```.js
+import { Post } from '../db/models/post.js';
+
+// Using our Post model, we are creating a function that takes the required post fields, creates, and then returns a new Post. 
+export async function createPost({ title, author, contents, tags }) {
+    const post = new Post({ title, author, contents, tags });
+    return await post.save();
+};
+
+
+// this function accepts a query and options argument (sortBy). 
+async function listPosts (query = {}, { sortBy = 'createdAt', sortOrder = 'descending' } = {}) {
+    return await Post.find(query).sort({[sortBy]: sortOrder});
+};
+
+// now define a function to list all posts
+export async function listAllPosts(options) {
+    return await listPosts({}, options)
+}
+
+// create a function to list all posts by a certain author
+export async function listPostsByAuthor(author, options) {
+    return await listPosts({author}, options);
+}
+
+// define a function to list posts by tag
+export async function listPostsByTag(tags, options) {
+    return await listPosts({tags}, options)
+}
+```
+</details>
+* in MongoDB we can match strings in an array by matching the string as if it was a single value.
+
+
+
+###### Defining test cases for list posts
+We need to create an initial state where we already have some posts in the database to be able to test the list functions. This is done using the ```beforeEach()``` which will execute some code before each test case is executed. 
+
+The function can also be used for a whole test file or execute it within a ```describe()```.
+
+In our case we will use it for the whole file as the sample posts will be needed when we start deleting posts. 
+
+<details>
+<summary>updated posts.test.js</summary>
+
+```.js
+import mongoose from 'mongoose';
+import { describe, expect, test, beforeEach, afterAll} from '@jest/globals';
+import { createPost, listAllPosts, listPostsByAuthor, listPostsByTag } from '../services/posts.js'
+import { Post } from '../db/models/post.js';
+
+// this function creates a new test, we can have multiple tests in here
+describe('creating posts', () => {
+
+    // this function is where we define our new test
+    test('with all parameters should succeeed', async() => {
+        const post = {
+            title: 'Hello Mongoose!',
+            author: 'Chakane Shegog',
+            contents: 'this post is stored in MongoDB db using Mongoose',
+            tags: ['mongoose', 'mongodb']
+        }
+        const createdPost = await createPost(post);
+        expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId);
+        const foundPost = await Post.findById(createdPost._id);
+        expect(foundPost).toEqual(expect.objectContaining(post));
+        expect(foundPost.createdAt).toBeInstanceOf(Date);
+    });
+
+    test('without title should fail', async () => {
+        const post = {
+            author: 'Chakane Shegog',
+            contents: 'Post with no title',
+            tags: ['Empty']
+        };
+
+        try {
+            await createPost(post);
+        } catch (err) {
+            expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
+            expect(err.message).toContain('`title` is required');
+        }
+    });
+
+    test('with minimal parameters should succeed', async () => {
+        const post = {
+            title: 'Only a title',
+        };
+        const createdPost = await createPost(post);
+        expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId);
+    });
+
+
+
+    
+})
+
+const samplePosts = [
+    {title: 'Learning Redux', author: 'Daniel Bugl', tags: ['redux']},
+    {title: 'Learn React with Hooks', author: 'Chakane Shegog', tags: ['react']},
+    {
+        title: 'Full-Stack React Projects',
+        author: 'Daniel Bugl',
+        tags: ['react', 'nodejs'],
+    },
+    {title: 'Guide to Typescript'}
+]
+
+// const post = require('../db/models/post.js'); // Adjust path to your Post model
+
+beforeAll(async () => {
+    await mongoose.connect('mongodb://localhost:27017/testdb', { // Replace with your test DB URI
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    });
+});
+
+afterAll(async () => {
+    await mongoose.connection.close(); // Close connection after all tests
+});
+
+let createdSamplePosts = []
+beforeEach(async () => {
+    console.time("deleteMany");
+    await Post.deleteMany({});
+    console.timeEnd("deleteMany");
+    
+    console.time("createPosts");
+    createdSamplePosts = await Promise.all(samplePosts.map(post => Post.create(post)));
+    console.timeEnd("createPosts");
+});
+
+describe('listing posts',  () => {
+    test('should return all posts', async () => {
+        const posts = await listAllPosts();
+        expect(posts.length).toEqual(createdSamplePosts.length);
+    });
+
+    test('should take into account provided sorting options', async () => {
+        const posts = await listAllPosts({
+            sortBy: 'updatedAt',
+            sortOrder: 'ascending',
+        })
+        const sortedSamplePosts = createdSamplePosts.sort(
+            (a, b) => a.updatedAt - b.updatedAt,
+        )
+        expect(posts.map((post) => post.updatedAt)).toEqual(
+            sortedSamplePosts.map((post) => post.updatedAt),
+        )
+    });
+
+    test('should be able to filter posts by author', async () => {
+        const posts = await listPostsByAuthor('Daniel Bugl');
+        expect(posts.length).toBe(3);
+    });
+});
+```
+
+</details>
+
+###### Defining the get single post, update and delete post functions
+The service function for getting s single post is similar to list all posts. Lets start with the posts.js file under /services. and define a function called ```getPostById```.
+

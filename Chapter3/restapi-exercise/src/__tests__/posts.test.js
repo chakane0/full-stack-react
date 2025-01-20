@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { describe, expect, test } from '@jest/globals';
-import { createPost } from '../services/posts.js'
+import { describe, expect, test, beforeEach, afterAll} from '@jest/globals';
+import { createPost, listAllPosts, listPostsByAuthor, listPostsByTag } from '../services/posts.js'
 import { Post } from '../db/models/post.js';
 
 // this function creates a new test, we can have multiple tests in here
@@ -43,4 +43,79 @@ describe('creating posts', () => {
         const createdPost = await createPost(post);
         expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId);
     });
+
+
+
+    
 })
+
+const samplePosts = [
+    {title: 'Learning Redux', author: 'Daniel Bugl', tags: ['redux']},
+    {title: 'Learn React with Hooks', author: 'Chakane Shegog', tags: ['react']},
+    {
+        title: 'Full-Stack React Projects',
+        author: 'Daniel Bugl',
+        tags: ['react', 'nodejs'],
+    },
+    {title: 'Guide to Typescript'}
+]
+
+// const post = require('../db/models/post.js'); // Adjust path to your Post model
+
+beforeAll(async () => {
+    await mongoose.connect('mongodb://localhost:27017/testdb', { // Replace with your test DB URI
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    });
+});
+
+afterAll(async () => {
+    await mongoose.connection.close(); // Close connection after all tests
+});
+
+let createdSamplePosts = []
+beforeEach(async () => {
+    console.time("deleteMany");
+    await Post.deleteMany({});
+    console.timeEnd("deleteMany");
+    
+    console.time("createPosts");
+    createdSamplePosts = await Promise.all(samplePosts.map(post => Post.create(post)));
+    console.timeEnd("createPosts");
+});
+
+describe('listing posts',  () => {
+    test('should return all posts', async () => {
+        const posts = await listAllPosts();
+        expect(posts.length).toEqual(createdSamplePosts.length);
+    });
+
+    test('should take into account provided sorting options', async () => {
+        const posts = await listAllPosts({
+            sortBy: 'updatedAt',
+            sortOrder: 'ascending',
+        })
+        const sortedSamplePosts = createdSamplePosts.sort(
+            (a, b) => a.updatedAt - b.updatedAt,
+        )
+        expect(posts.map((post) => post.updatedAt)).toEqual(
+            sortedSamplePosts.map((post) => post.updatedAt),
+        )
+    });
+
+    test('should be able to filter posts by author', async () => {
+        const posts = await listPostsByAuthor('Daniel Bugl');
+        expect(posts.length).toBe(3);
+    });
+
+    test('should be able to filter posts by tag', async () => {
+        const posts = await listPostsByTag('nodejs');
+        expect(posts.length).toBe(1);
+    })
+});
+
+
+
+
+
+
