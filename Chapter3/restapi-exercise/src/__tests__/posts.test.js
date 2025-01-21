@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { describe, expect, test, beforeEach, afterAll} from '@jest/globals';
-import { createPost, listAllPosts, listPostsByAuthor, listPostsByTag } from '../services/posts.js'
+import { describe, expect, test, beforeEach, afterAll, beforeAll} from '@jest/globals';
+import { createPost, listAllPosts, listPostsByAuthor, listPostsByTag, getPostById, updatePost} from '../services/posts.js'
 import { Post } from '../db/models/post.js';
 
 // this function creates a new test, we can have multiple tests in here
@@ -113,6 +113,37 @@ describe('listing posts',  () => {
         expect(posts.length).toBe(1);
     })
 });
+
+describe('getting a post', () => {
+    test('should return the full post', async () => {
+        const post = await getPostById(createdSamplePosts[0]._id);
+        expect(post.toObject()).toEqual(createdSamplePosts[0].toObject());
+    });
+
+    test('should fail if the id does not exist', async () => {
+        const post = await getPostById('0000000000000000000000000');
+        expect(post).toEqual(null);
+    });
+})
+
+describe('updating posts', () => {
+    test('should update the specified property', async () => {
+        await updatePost(createdSamplePosts[0]._id, {
+            author: 'Test Author',
+        })
+        const updatedPost = await Post.findById(createdSamplePosts[0]._id);
+        expect(updatedPost.author).toEqual('Test Author');
+    });
+
+    test('should not update other properties', async () => {
+        await updatePost(createdSamplePosts[0]._id, {
+            author: 'Test Author',
+        })
+        const updatedPost = await Post.findById(createdSamplePosts[0]._id);
+        expect(updatedPost.title).toEqual('Learning Redux');
+    })
+    
+})
 
 
 

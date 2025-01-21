@@ -481,5 +481,29 @@ describe('listing posts',  () => {
 </details>
 
 ###### Defining the get single post, update and delete post functions
-The service function for getting s single post is similar to list all posts. Lets start with the posts.js file under /services. and define a function called ```getPostById```.
+The service function for getting s single post is similar to list all posts. 
+
+1. Lets start with the posts.js file under /services. and define a function called ```getPostById```.
+
+```.js
+export async function getPostsById(postId) {
+    return await Post.findById(postId);
+}
+```
+
+
+2. Then we will create an ```updatePost``` function
+```.js
+export async function updatePost(postId, {title, author, contents, tags}) {
+    return await Post.findOneAndUpdate(
+        {_id: postId},
+        {$set:{title, author, contents, tags}},
+        {new:true},
+    );
+};
+```
+
+
+
+
 

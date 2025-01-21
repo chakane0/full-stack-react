@@ -32,4 +32,18 @@ export async function getPostById(postId) {
     return await Post.findById(postId);
 }
 
+// this function takes in an ID of an existing post and the post will be then updated using ```$set```
+export async function updatePost(postId, {title, author, contents, tags}) {
+    return await Post.findOneAndUpdate(
+        {_id: postId},
+        {$set:{title, author, contents, tags}},
+        {new:true},
+    );
+};
+
+
+// this function will delete a post based on ID
+export async function deletePost(postId) {
+    return await Post.deleteOne({ _id: postId });
+}
 
