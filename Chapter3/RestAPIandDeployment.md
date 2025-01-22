@@ -6,7 +6,7 @@ This section will cover 3 chapters
 * Deploying the application with Docker and CI/CD
 
 
-### Implementing the backend with: Express, Mongoose ODM, and Jest
+## Implementing the backend with: Express, Mongoose ODM, and Jest
 With what we have leared about MongoDB and Node.js so far, we should be able to now build a backend service using Express to provide a REST API. Mongoose ```object data modeling``` (ODM) will be an interface for our MongoDB and Jes will be used to test our code.
 
 This section will show us how to: 
@@ -15,7 +15,7 @@ This section will show us how to:
 * Develop and test service functions
 * Provide REST API using express
 
-#### Designing a backend service
+### Designing a backend service
 To design such a service we will start with an architecture pattern called MVC ```model-view-controller```. It consists of:
 1. Model: Data and basic logic
 2. Controller: Controls how data is processed and displayed
@@ -27,7 +27,7 @@ In modern applications, the frontend is mainly interactive and the backend is us
 2. Service Layer: Provides service functions such as CRUD functions which access the DB through the data layer
 3. Data Layer: Deals with accessing the DB and does basic validation to ensure the DB is consistent. 
 
-##### Creating the folder structure for our backend service
+#### Creating the folder structure for our backend service
 Within the /src folder have this setup
 Folder: db
 Folder: services
@@ -44,7 +44,7 @@ Our first application will be a blog application. The API should do the followin
 To provide these function we need to use a db schema to define what a blog post object should look like. Then we need service functions to handle CRUD functionality. Then use our REST API to query, create, update, and delete the blog posts. 
 
 
-###### Creating db schemas using Mongoose
+#### Creating db schemas using Mongoose
 Mongoose is a library that simplifies MongoDB object modeling by reducing boilerplate code. 
 
 First install the Mongoose library:
@@ -107,7 +107,7 @@ export const Post = mongoose.model('post', postSchema);
 ```
 Now we can start using the model to create and query posts.
 
-###### Using the blog post model
+#### Using the blog post model
 Lets first access the model inside example.js only because we have no defined any service functions or routes yet. 
 
 Heres an example of how to achieve this (by modifying the example.js file): 
@@ -140,7 +140,7 @@ Now when we run this example.js file, we will see in our docker console that a n
 
 By now, we have seen how using Mongoose is just a wrapper for MongoDB. 
 
-##### Defining creation and last update dates in the blog post
+#### Defining creation and last update dates in the blog post
 We need to utilize the ```{timestamps:true}``` property in each newly created post to add timestamps for our posts. So within the post.js file inside out /db/models/ folder we will need to add that new property to our post schema.
 
 ```
@@ -160,7 +160,7 @@ Now we are at a point to where any code we write, we just test it by executing a
 
 Jest is a test runner which will define and execute unit tests. The mongodb-memory-server library will let us create a new instance of the MongoDB database , storing our data only in memory so that we can run our tests on a fresh database instance. 
 
-###### Setting up the test environment
+### Setting up the test environment
 <details>
 <summary>how to setup your test environment</summary>
 1. Install Jest  and mongo db memory server into your project
@@ -238,7 +238,7 @@ Then finally in the package.json script of our project, we will need to add a te
 Now we should be able to execute ```npm test``` and the logs will show that there no scripts to test.
 </details>
 
-###### Writing our 1st service function: createPost
+#### Writing our 1st service function: createPost
 This function will create a new post for us. We can then write tests for it by verifying the create function makes a new post with the required fields. 
 
 1. Create a new /src/services/posts.js file
@@ -253,7 +253,7 @@ export async function createPost({ title, author, contents, tags }) {
 };
 ```
 
-###### Defining test cases for the createPost service function
+#### Defining test cases for the createPost service function
 Lets test our createPost function. 
 
 1. Create a new folder under /src called ```__test__```
@@ -313,7 +313,7 @@ describe('creating posts', () => {
 ```
 </details>
 
-###### Defining a function to list posts. 
+### Defining a function to list posts. 
 We will be creating an internal function to list al of our posts called ```listPosts```. This function will be able to query posts and define a sort order. This function will define these related functions: ```listAllPosts``` ```listPostsByAuthor``` ```listPostsByTag```.
 
 1. Edit the /src/services/posts.js file to define a function at the end of the file. 
@@ -355,7 +355,7 @@ export async function listPostsByTag(tags, options) {
 
 
 
-###### Defining test cases for list posts
+### Defining test cases for list posts
 We need to create an initial state where we already have some posts in the database to be able to test the list functions. This is done using the ```beforeEach()``` which will execute some code before each test case is executed. 
 
 The function can also be used for a whole test file or execute it within a ```describe()```.
@@ -480,7 +480,7 @@ describe('listing posts',  () => {
 
 </details>
 
-###### Defining the get single post, update and delete post functions
+### Defining the get single post, update and delete post functions
 The service function for getting s single post is similar to list all posts. 
 
 1. Lets start with the posts.js file under /services. and define a function called ```getPostById```.
@@ -504,6 +504,107 @@ export async function updatePost(postId, {title, author, contents, tags}) {
 ```
 
 
+# Providing a REST API using Express
 
+Now that we have the backend service functions setup with test cases were good to go with creating a REST (representational state transfer) API.This gives us a way to access our server by making your own http based endpoint and pinging it for data. 
 
+This is incredibly useful for all kinds of apps. This gives the developer a safe way to share data to the user in a precise manner. All the user would have to do is make a GET request (could be triggered a button click, or submit form) in the browser and the Server will receive the request and respond back with data. We will be using Express JS to handle the server action to handle requests and respond back. 
+
+The 5 most common requests are:
+
+1. ```GET``` : Used to read resources. Does not change state of database. Typically responds back with a 200
+2. ```POST``` : Used to create brand new resources by updating the database. The typical response is 201
+3. ```PUT``` : Updates an existing resource (all fields are changed) by changing the database state> Also typically responds with a 201
+4. ```PATCH``` : Modified an existing resource via ID (a single field is changed). Typically responds 201
+5. ```DELETE``` : Deletes a resource in a database. Typically responds 200
+
+The conventional way to define API routes in your project would be something like: ```/api/v1```. We can use ```/api/v2``` when changing the original ai destination and migrate the changes to v1.
+
+### Defining our API Routes
+Lets start defining our routes for the backend. We currently have to api functions written as a service function:
+
+<details>
+<summary>All API routes we are going to make</summary>
+*  ```GET /api/v1/posts``` 
+   *  Get all posts
+<br>
+*  ```GET /api/v1/posts?sortBy=updatedAt&sortOrder=ascending```
+   *  Get a sorted list of all posts
+<br>
+*  ```GET /api/v1/posts?author=daniel```
+   *  Get a lists of posts by name
+  <br>
+*  ```GET /api/v1/posts/?tag=react```
+   *  Get a single post by tag
+<br>
+*  ```GET /api/v1/posts/:id```
+   *  Get an existing post by ID
+<br>
+*  ```POST /api/v1/posts```
+   *  Create a new post
+<br>
+*  ```PATCH /api/v1/posts/:id```
+   *  Update an existing post by ID
+<br>
+*  ```DELETE /api/v1/posts/:id```
+   *  Delete a post by ID
+</details>
+
+### Setting up Express
+Express is a web framework for Node.js. It provides functions that will help us create our API functionality. 
+
+1. You can install express with this command: ``` npm install express@4.18.2```. 
+2. In the app.js file, write this code:
+
+```.js
+import express from 'express';
+
+// create a new Express app
+const app = express();
+
+// define routes on the Express app. Define a GET route
+app.get('/', (req, res) => {
+  res.send('Hello from Express');
+});
+
+// export the app to use with other files
+export { app };
+```
+
+3. Then we need to create a webserver in the index.js file
+
+```.js
+import { app } from './App.js'
+
+// define a port number and have the Express instance listen to it
+const PORT = 3345;
+app.listen(PORT);
+console.info(`express server running on http://localhost:${PORT}`);
+```
+
+4. Edit the package.json a start script to run our server.
+
+```
+"scripts": {
+    "start": "node src/index.js",
+}
+```
+
+5. Run the backend server
+
+```npm start```
+
+Now you should be able to access the localhost and wee the message you typed in app.js.
+
+### Using dotenv for setting environment variables
+
+As some point we will need to us environment variables. A good way to load them is in a ```dotenv --> .env```. This is how you can set these up:
+
+1. Install the dotenv dependency: ```npm install dotenv@16.3.1```.
+2. Edit the /src/index.js, import dovend there, and call dotenv.config()
+
+```
+import dotenv from 'dotenv';
+dotenv.config();
+```
 

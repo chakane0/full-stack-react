@@ -1,12 +1,13 @@
-import logo from './logo.svg';
-import './App.css';
+import express from 'express';
 
-function App() {
-  return (
-    <div className="App">
+// create a new Express app
+const app = express();
 
-    </div>
-  );
-}
+// define routes on the Express app. Define a GET route
+app.get('/', (req, res) => {
+  res.send('Hello from Express');
+});
 
-export default App;
+// export the app to use with other files
+export { app };
+
