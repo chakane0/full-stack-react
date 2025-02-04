@@ -15,17 +15,12 @@ This section will show us how to:
 * Develop and test service functions
 * Provide REST API using express
 
+
 ### Designing a backend service
-To design such a service we will start with an architecture pattern called MVC ```model-view-controller```. It consists of:
-1. Model: Data and basic logic
-2. Controller: Controls how data is processed and displayed
-3. View: Displays the current state
+<details>
+    <summary>open</summary>
 
-In modern applications, the frontend is mainly interactive and the backend is used for rendering through server side rendering. Therefore, we often distinguish between the actual backend service(s) and the backend for frontend service(s). Because of this, the backend service should only deal with processing and serving requests and data; it should not render the user interface. Because of this the MVC pattern has become altered a little bit. We should now consider:
 
-1. Route Layer: Defines routes that consumers can access + handles user input by processing the request parameters and body and then calling service functions.
-2. Service Layer: Provides service functions such as CRUD functions which access the DB through the data layer
-3. Data Layer: Deals with accessing the DB and does basic validation to ensure the DB is consistent. 
 
 #### Creating the folder structure for our backend service
 Within the /src folder have this setup
@@ -160,15 +155,20 @@ Now we are at a point to where any code we write, we just test it by executing a
 
 Jest is a test runner which will define and execute unit tests. The mongodb-memory-server library will let us create a new instance of the MongoDB database , storing our data only in memory so that we can run our tests on a fresh database instance. 
 
+</details>
+
 ### Setting up the test environment
+<details>
+    <summary>open</summary>
+
 <details>
 <summary>how to setup your test environment</summary>
 1. Install Jest  and mongo db memory server into your project
 ```npm install --save-dev jest@29.7.0```
 ```npm install --save-dev mongodb-memory-server@9.1.1```
 
-2. Create a /src/tests folder to put our tests in
-3. In the new tests folder, create a file called globalSetup.js.
+1. Create a /src/tests folder to put our tests in
+2. In the new tests folder, create a file called globalSetup.js.
 
 ```
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -502,9 +502,15 @@ export async function updatePost(postId, {title, author, contents, tags}) {
     );
 };
 ```
+</details>
 
 
-# Providing a REST API using Express
+
+
+### Providing a REST API using Express
+
+<details>
+    <summary>open</summary>
 
 Now that we have the backend service functions setup with test cases were good to go with creating a REST (representational state transfer) API.This gives us a way to access our server by making your own http based endpoint and pinging it for data. 
 
@@ -601,10 +607,27 @@ Now you should be able to access the localhost and wee the message you typed in 
 As some point we will need to us environment variables. A good way to load them is in a ```dotenv --> .env```. This is how you can set these up:
 
 1. Install the dotenv dependency: ```npm install dotenv@16.3.1```.
-2. Edit the /src/index.js, import dovend there, and call dotenv.config()
+2. Edit the /src/index.js, import dovenv there, and call dotenv.config()
 
 ```
 import dotenv from 'dotenv';
 dotenv.config();
 ```
+
+3. Start replacing any static variables with environment variables within index.js.
+
+```
+const PORT = process.send.PORT;
+```
+
+4. Import initDatabase into the index.js file and alter that file to first call the function import. If it fails, then we wont even attempt to start the express app. 
+
+5. Create a ```.env``` file and define 2 variables:
+
+```.env
+PORT=3000
+DATABASE_URL=mongodb://localhost:27017/blog
+```
+
+</details>
 
