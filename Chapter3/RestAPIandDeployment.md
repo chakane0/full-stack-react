@@ -629,5 +629,118 @@ PORT=3000
 DATABASE_URL=mongodb://localhost:27017/blog
 ```
 
+### Using nodemon for server auto restart
+
+The nodemon tool allows us to run a server with the feature of "auto-restarting" the server on changes to source files.
+
+1. Install the nodemon tool as a dependency
+
+```
+npm install -save-dev nodemon@3.0.2
+```
+
+2. Create a nodemon.json file in the root of your project and add the following contents to it:
+
+```
+{
+    "watch": ["./src", ".env", "package-lock.json"]
+}
+
+This will ensure all code under /src will utilize the nodemon feature. 
+```
+
+3. Edit the package.json and define a new "dev" script that runs nodemon
+
+```
+"scripts": {
+    "dev": "nodemon src/index.js",
+}
+```
+
+4. Now run ```npm run dev```
+5. Change some stuff around /src to see our code updates in real time.
+
+
+### Creating API routes with Express
+Now to start creating API routes with express, we need to:
+1. Create a /src/routes/posts.js and import all our service functions.
+
+<details>
+    <summary>posts.js</summary>
+
+```.jsx
+import {
+    listAllPosts,
+    listPostsByAuthor,
+    listPostsByTag,
+    getPostBtId,
+    getPostById,
+} from '../services/posts.js';
+
+// this function takes the express app as an argument
+export function postsRoutes(app) {
+    // define the routes (GET, POST, etc)
+
+    // get all posts
+    app.get('/api/v1/posts', async (req, res) => {
+
+        // here, we can use query params to map them to the arguments of our functions. 
+        const { sortBy, sortOrder, author, tag } = req.query;
+        const options = { sortBy, sortOrder };
+
+        try {
+
+            // check if author or tag was provided
+            if(author && tag) {
+                return res.status(400).json({error: 'query by either author or tag, not both'});
+
+            } 
+
+            // return respective json
+            else if(author) {
+                return res.json(await listPostsByAuthor(author, options));
+            }
+            else if(tag) {
+                return res.json(await listPostsByTag(tag, options));
+            } else {
+                return res.json(await listAllPosts(options));
+            }
+        } catch(err) {
+            console.error('error listing posts', err);
+            return res.status(500).end();
+        }
+    })
+
+    // get single post by id
+    app.get('/api/v1/posts/:id', async (req, res) => {
+        // use req.params.id to get the :id part of our route and pass it to our service function
+        const { id } = req.params;
+        try {
+            const post = await getPostById();
+
+            // if the result is null return a 404 response, otherwise return json
+            if(post === null) return res.status(404).end();
+            return res.json(post);
+            
+        } catch(err) {
+            console.error('error getting post', err);
+            return res.status(500).end();
+        }
+    })
+}
+```
+
 </details>
 
+2. After defining the GET routes, we need to mount them in our app(within ```app.js```)
+```import { postsRoutes } from './routes/posts';```
+
+3. Then call the ```postRoutes(app)``` after initializing our express app.
+
+```
+const app = express();
+postsRoutes(app);
+```
+
+
+</details>
