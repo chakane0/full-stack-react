@@ -608,3 +608,4 @@ import dotenv from 'dotenv';
 dotenv.config();
 ```
 
+3. Now replace the hardcoded PORT number with environment variables. 
